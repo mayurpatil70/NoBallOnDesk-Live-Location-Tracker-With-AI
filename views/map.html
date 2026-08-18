@@ -92,12 +92,19 @@
 </head>
 
 <body>
+    <div style="position: fixed; top: 16px; right: 16px; z-index: 1000;">
+        <button id="logoutBtn" type="button">Logout</button>
+    </div>
     <div id="map"></div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            window.location.href = '/logout';
+        });
+
         const socket = io();
 
         // Initialize map with OpenStreetMap tiles

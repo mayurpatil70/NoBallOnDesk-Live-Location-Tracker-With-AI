@@ -21,7 +21,7 @@
 </head>
 
 <body>
-    <form action="/login" method="post">
+    <form id="loginForm">
         <h1 class="title">Login</h1>
 
         <div class="field">
@@ -32,8 +32,46 @@
             <input type="password" class="input" placeholder="Password" required name="password">
         </div>
 
-        <input type="submit" value="Login" class="button is-fullwidth is-primary">
+        <button type="submit" class="button is-fullwidth is-primary">Login</button>
+        <p id="loginMessage" style="margin-top: 1rem; color: red;"></p>
     </form>
+
+    <script>
+        const form = document.getElementById('loginForm');
+        const message = document.getElementById('loginMessage');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            message.textContent = '';
+
+            const formData = new FormData(form);
+            const payload = {
+                username: formData.get('username'),
+                password: formData.get('password')
+            };
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    message.textContent = data.message || 'Login failed';
+                    return;
+                }
+
+                window.location.href = data.redirect || '/map.html';
+            } catch (error) {
+                message.textContent = 'Login request failed';
+            }
+        });
+    </script>
 </body>
 
 </html>

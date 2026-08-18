@@ -102,6 +102,10 @@
 </head>
 
 <body>
+    <div style="position: fixed; top: 16px; right: 16px; z-index: 10;">
+        <button id="logoutBtn" type="button">Logout</button>
+    </div>
+
     <div class="weather-card">
         <h2>Weather App</h2>
         <p class="location"><span id="city">City</span>, <span id="country">Country</span></p>
@@ -121,6 +125,10 @@
 
 
     <script>
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            window.location.href = '/logout';
+        });
+
         const id = localStorage.getItem("id") || generateId()
         const btn = document.querySelector("#check-weather")
         let __interval
