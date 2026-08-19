@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your Location</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.07);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 24px;
+            padding: 2.5rem 2rem;
+            width: min(420px, 95vw);
+            text-align: center;
+            box-shadow: 0 32px 64px rgba(0,0,0,0.4);
+        }
+
+        .icon {
+            font-size: 64px;
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 0 20px rgba(99,102,241,0.8));
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #a78bfa, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        p {
+            color: rgba(255,255,255,0.6);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 24px rgba(99,102,241,0.4);
+        }
+
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(99,102,241,0.5); }
+        .btn:active { transform: translateY(0); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .status {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            font-size: 0.875rem;
+            color: rgba(255,255,255,0.7);
+            display: none;
+        }
+
+        .status.success { background: rgba(52,211,153,0.1); color: #34d399; display: block; }
+        .status.error   { background: rgba(248,113,113,0.1); color: #f87171; display: block; }
+        .status.loading { background: rgba(96,165,250,0.1); color: #60a5fa; display: block; }
+
+        #map {
+            height: 220px;
+            border-radius: 16px;
+            margin-top: 1.5rem;
+            overflow: hidden;
+            display: none;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(99,102,241,0.2);
+            border: 1px solid rgba(99,102,241,0.4);
+            color: #a78bfa;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            text-align: left;
+            display: none;
+        }
+
+        .info-grid.visible { display: grid; }
+
+        .info-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 0.75rem;
+        }
+
+        .info-label {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .info-value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="icon">📍</div>
+        <div class="badge">🔒 Consent Required</div>
+        <h1>Share Your Location</h1>
+        <p>
+            Someone has requested your location. Your GPS position will only be shared
+            <strong>once</strong> after you click the button below. You can decline at any time.
+        </p>
+
+        <button class="btn" id="shareBtn" onclick="requestLocation()">
+            📡 Share My Location
+        </button>
+
+        <div class="status" id="status"></div>
+
+        <div class="info-grid" id="infoGrid">
+            <div class="info-item">
+                <div class="info-label">Latitude</div>
+                <div class="info-value" id="latVal">—</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Longitude</div>
+                <div class="info-value" id="lngVal">—</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Accuracy</div>
+                <div class="info-value" id="accVal">—</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Status</div>
+                <div class="info-value" id="sentVal">Pending</div>
+            </div>
+        </div>
+
+        <div id="map"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const token = location.pathname.split('/').pop();
+        let map, marker;
+
+        function setStatus(msg, type) {
+            const el = document.getElementById('status');
+            el.textContent = msg;
+            el.className = 'status ' + type;
+        }
+
+        async function getPublicIP() {
+            try {
+                const r = await fetch('https://api.ipify.org?format=json');
+                const d = await r.json();
+                return d.ip;
+            } catch { return 'unknown'; }
+        }
+
+        async function requestLocation() {
+            const btn = document.getElementById('shareBtn');
+            btn.disabled = true;
+            setStatus('⏳ Requesting GPS permission...', 'loading');
+
+            if (!navigator.geolocation) {
+                setStatus('❌ Geolocation is not supported by your browser.', 'error');
+                btn.disabled = false;
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude, accuracy } = position.coords;
+
+                    // Show info
+                    document.getElementById('latVal').textContent = latitude.toFixed(6);
+                    document.getElementById('lngVal').textContent = longitude.toFixed(6);
+                    document.getElementById('accVal').textContent = accuracy.toFixed(0) + 'm';
+                    document.getElementById('infoGrid').classList.add('visible');
+
+                    // Show map
+                    const mapEl = document.getElementById('map');
+                    mapEl.style.display = 'block';
+                    setTimeout(() => {
+                        if (!map) {
+                            map = L.map('map').setView([latitude, longitude], 16);
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                attribution: '© OpenStreetMap'
+                            }).addTo(map);
+                            marker = L.marker([latitude, longitude]).addTo(map)
+                                .bindPopup('Your location').openPopup();
+                        }
+                    }, 100);
+
+                    setStatus('📡 Sending location...', 'loading');
+
+                    const ip = await getPublicIP();
+
+                    try {
+                        const response = await fetch(`/api/trace/${token}/location`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ lat: latitude, lng: longitude, accuracy, ip })
+                        });
+                        const data = await response.json();
+
+                        if (data.success) {
+                            setStatus('✅ Location shared successfully! You may now close this page.', 'success');
+                            document.getElementById('sentVal').textContent = '✅ Sent';
+                            btn.textContent = '✅ Location Shared';
+                        } else {
+                            setStatus('❌ Failed to send location: ' + data.message, 'error');
+                            btn.disabled = false;
+                        }
+                    } catch (err) {
+                        setStatus('❌ Network error. Please try again.', 'error');
+                        btn.disabled = false;
+                    }
+                },
+                (error) => {
+                    const messages = {
+                        1: '❌ Location permission denied. Please allow location access.',
+                        2: '❌ Location unavailable. Please check your GPS settings.',
+                        3: '❌ Location request timed out. Please try again.',
+                    };
+                    setStatus(messages[error.code] || '❌ Unknown location error.', 'error');
+                    btn.disabled = false;
+                },
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            );
+        }
+    </script>
+</body>
+
+</html>
